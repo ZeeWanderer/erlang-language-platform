@@ -14,7 +14,11 @@
 use std::fmt;
 use std::sync::Arc;
 
-use vfs::AbsPathBuf;
+#[cfg(target_os = "windows")]
+use elp_windows::{AbsPath, AbsPathBuf};
+#[cfg(not(target_os = "windows"))]
+use paths::{AbsPath, AbsPathBuf};
+use paths::{RelPath, RelPathBuf};
 use vfs::FileId;
 
 use crate::RootQueryDb;

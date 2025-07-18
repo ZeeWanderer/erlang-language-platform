@@ -17,10 +17,11 @@ use anyhow::Result;
 use anyhow::bail;
 use elp_log::timeit;
 use lazy_static::lazy_static;
-#[cfg(not(windows))]
-use paths::AbsPathBuf;
-#[cfg(windows)]
-use elp_windows::WindowsAbsPathBuf as AbsPathBuf;
+#[cfg(target_os = "windows")]
+use elp_windows::{AbsPath, AbsPathBuf};
+#[cfg(not(target_os = "windows"))]
+use paths::{AbsPath, AbsPathBuf};
+use paths::{RelPath, RelPathBuf};
 use paths::Utf8Path;
 use paths::Utf8PathBuf;
 

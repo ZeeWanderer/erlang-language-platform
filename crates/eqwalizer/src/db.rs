@@ -14,7 +14,12 @@ use std::sync::Arc;
 use std::sync::LazyLock;
 use std::time::Instant;
 
-use elp_base_db::AbsPathBuf;
+#[cfg(target_os = "windows")]
+use elp_windows::{AbsPath, AbsPathBuf};
+#[cfg(not(target_os = "windows"))]
+use paths::{AbsPath, AbsPathBuf};
+use paths::{RelPath, RelPathBuf};
+
 use elp_base_db::AppType;
 use elp_base_db::FileId;
 use elp_base_db::ModuleName;

@@ -14,6 +14,14 @@ use elp_syntax::SmolStr;
 use vfs::FileId;
 use vfs::VfsPath;
 
+#[cfg(target_os = "windows")]
+use elp_windows::{AbsPath, AbsPathBuf};
+#[cfg(target_os = "windows")]
+use elp_windows::ToVfsPath;
+#[cfg(not(target_os = "windows"))]
+use paths::{AbsPath, AbsPathBuf};
+use paths::{RelPath, RelPathBuf};
+
 use crate::AppData;
 use crate::ProjectId;
 use crate::RootQueryDb;
@@ -70,7 +78,7 @@ impl<'a> IncludeCtx<'a> {
             let app_data = db.file_app_data(file_id)?;
             app_data.include_path.iter().find_map(|include| {
                 let name = include.join(path);
-                db.include_file_id(app_data.project_id, VfsPath::from(name.clone()))
+                db.include_file_id(app_data.project_id, VfsPath::from(name.clone().to_vfs_path()))
             })
         }
     }
@@ -86,7 +94,7 @@ impl<'a> IncludeCtx<'a> {
         let include = if let Some(include_mapping) = &project_data.include_mapping {
             include_mapping
                 .get(&path)
-                .map(|path| db.include_file_id(project_id, VfsPath::from(path.clone())))
+                .map(|path| db.include_file_id(project_id, VfsPath::from(path.clone().to_vfs_path())))
         } else {
             None
         };
@@ -95,7 +103,7 @@ impl<'a> IncludeCtx<'a> {
             let source_root_id = project_data.app_roots.get(app_name)?;
             let target_app_data = db.app_data(source_root_id)?;
             let path = target_app_data.dir.join(include_path);
-            db.include_file_id(project_id, VfsPath::from(path.clone()))
+            db.include_file_id(project_id, VfsPath::from(path.clone().to_vfs_path()))
                 .or_else(|| {
                     find_generated_include_lib(db, project_id, include_path, &target_app_data)
                 })
@@ -127,7 +135,7 @@ fn find_generated_include_lib(
     let path = include_path.strip_prefix("include/")?;
     target_app_data.include_path.iter().find_map(|dir| {
         let path = dir.join(path);
-        db.include_file_id(project_id, VfsPath::from(path.clone()))
+        db.include_file_id(project_id, VfsPath::from(path.clone().to_vfs_path()))
     })
 }
 

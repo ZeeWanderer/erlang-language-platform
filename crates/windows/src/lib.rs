@@ -9,6 +9,18 @@ pub use camino::{Utf8Component, Utf8Components, Utf8Path, Utf8PathBuf, Utf8Prefi
 
 use paths::{AbsPath as InnerAbsPath, AbsPathBuf as InnerAbsPathBuf, RelPath};
 
+use vfs::VfsPath;
+
+pub trait ToVfsPath {
+    fn to_vfs_path(&self) -> VfsPath;
+}
+
+impl ToVfsPath for AbsPathBuf {
+    fn to_vfs_path(&self) -> VfsPath {
+        VfsPath::from(self.0.clone())
+    }
+}
+
 fn normalize_path(path: &Utf8Path) -> Utf8PathBuf {
     let mut components = path.components().peekable();
     let mut ret = if let Some(c @ Utf8Component::Prefix(..)) = components.peek().copied() {
@@ -50,138 +62,164 @@ fn normalize_windows(path: &Utf8Path) -> Utf8PathBuf {
 }
 
 #[derive(Debug, Clone, Ord, PartialOrd, Eq, Hash)]
-pub struct WindowsAbsPathBuf(InnerAbsPathBuf);
+pub struct AbsPathBuf(InnerAbsPathBuf);
 
-impl ops::Deref for WindowsAbsPathBuf {
-    type Target = InnerAbsPathBuf;
-    fn deref(&self) -> &Self::Target {
-        &self.0
+impl From<AbsPathBuf> for Utf8PathBuf {
+    fn from(AbsPathBuf(path_buf): AbsPathBuf) -> Utf8PathBuf {
+        path_buf.into()
     }
 }
 
-impl ops::DerefMut for WindowsAbsPathBuf {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+impl From<AbsPathBuf> for PathBuf {
+    fn from(AbsPathBuf(path_buf): AbsPathBuf) -> PathBuf {
+        path_buf.into()
     }
 }
 
-impl From<WindowsAbsPathBuf> for Utf8PathBuf {
-    fn from(w: WindowsAbsPathBuf) -> Utf8PathBuf {
-        w.0.into()
+impl ops::Deref for AbsPathBuf {
+    type Target = AbsPath;
+    fn deref(&self) -> &AbsPath {
+        self.as_path()
     }
 }
 
-impl From<WindowsAbsPathBuf> for PathBuf {
-    fn from(w: WindowsAbsPathBuf) -> PathBuf {
-        w.0.into()
-    }
-}
-
-impl AsRef<Utf8Path> for WindowsAbsPathBuf {
+impl AsRef<Utf8Path> for AbsPathBuf {
     fn as_ref(&self) -> &Utf8Path {
         self.0.as_ref()
     }
 }
 
-impl AsRef<OsStr> for WindowsAbsPathBuf {
+impl AsRef<OsStr> for AbsPathBuf {
     fn as_ref(&self) -> &OsStr {
         self.0.as_ref()
     }
 }
 
-impl AsRef<Path> for WindowsAbsPathBuf {
+impl AsRef<Path> for AbsPathBuf {
     fn as_ref(&self) -> &Path {
         self.0.as_ref()
     }
 }
 
-impl AsRef<WindowsAbsPath> for WindowsAbsPathBuf {
-    fn as_ref(&self) -> &WindowsAbsPath {
+impl AsRef<AbsPath> for AbsPathBuf {
+    fn as_ref(&self) -> &AbsPath {
         self.as_path()
     }
 }
 
-impl Borrow<WindowsAbsPath> for WindowsAbsPathBuf {
-    fn borrow(&self) -> &WindowsAbsPath {
+impl AsRef<InnerAbsPath> for AbsPathBuf {
+    fn as_ref(&self) -> &InnerAbsPath {
+        &*self.0
+    }
+}
+
+impl Borrow<AbsPath> for AbsPathBuf {
+    fn borrow(&self) -> &AbsPath {
         self.as_path()
     }
 }
 
-impl TryFrom<Utf8PathBuf> for WindowsAbsPathBuf {
+impl Borrow<InnerAbsPath> for AbsPathBuf {
+    fn borrow(&self) -> &InnerAbsPath {
+        &*self.0
+    }
+}
+
+impl TryFrom<Utf8PathBuf> for AbsPathBuf {
     type Error = Utf8PathBuf;
-    fn try_from(path_buf: Utf8PathBuf) -> Result<WindowsAbsPathBuf, Utf8PathBuf> {
+    fn try_from(path_buf: Utf8PathBuf) -> Result<AbsPathBuf, Utf8PathBuf> {
         if !path_buf.is_absolute() {
             return Err(path_buf);
         }
         #[cfg(target_os = "windows")]
         {
             let normalized = normalize_windows(&path_buf);
-            Ok(WindowsAbsPathBuf(InnerAbsPathBuf::try_from(normalized)?))
+            let inner = InnerAbsPathBuf::assert(normalized);
+            Ok(AbsPathBuf(inner))
         }
         #[cfg(not(target_os = "windows"))]
-        Ok(WindowsAbsPathBuf(InnerAbsPathBuf::try_from(path_buf)?))
+        {
+            let inner = InnerAbsPathBuf::assert(path_buf);
+            Ok(AbsPathBuf(inner))
+        }
     }
 }
 
-impl TryFrom<&str> for WindowsAbsPathBuf {
+impl TryFrom<&str> for AbsPathBuf {
     type Error = Utf8PathBuf;
-    fn try_from(path: &str) -> Result<WindowsAbsPathBuf, Utf8PathBuf> {
-        WindowsAbsPathBuf::try_from(Utf8PathBuf::from(path))
+    fn try_from(path: &str) -> Result<AbsPathBuf, Utf8PathBuf> {
+        AbsPathBuf::try_from(Utf8PathBuf::from(path))
     }
 }
 
-impl<P: AsRef<Path> + ?Sized> PartialEq<P> for WindowsAbsPathBuf {
+impl<P: AsRef<Path> + ?Sized> PartialEq<P> for AbsPathBuf {
     fn eq(&self, other: &P) -> bool {
         #[cfg(target_os = "windows")]
         {
-            let self_str = self.0.as_str().to_lowercase();
+            let self_str = self.as_str().to_lowercase();
             let other_str = other.as_ref().to_string_lossy().to_lowercase();
             self_str == other_str
         }
         #[cfg(not(target_os = "windows"))]
         {
-            self.0.as_std_path() == other.as_ref()
+            self.0 == other.as_ref()
         }
     }
 }
 
-impl WindowsAbsPathBuf {
-    pub fn assert(path: Utf8PathBuf) -> WindowsAbsPathBuf {
-        WindowsAbsPathBuf::try_from(path)
+impl AbsPathBuf {
+    pub fn assert(path: Utf8PathBuf) -> AbsPathBuf {
+        AbsPathBuf::try_from(path)
             .unwrap_or_else(|path| panic!("expected absolute path, got {path}"))
     }
 
-    pub fn assert_utf8(path: PathBuf) -> WindowsAbsPathBuf {
-        WindowsAbsPathBuf::assert(
+    pub fn assert_utf8(path: PathBuf) -> AbsPathBuf {
+        AbsPathBuf::assert(
             Utf8PathBuf::from_path_buf(path)
                 .unwrap_or_else(|path| panic!("expected utf8 path, got {}", path.display())),
         )
     }
 
-    pub fn as_path(&self) -> &WindowsAbsPath {
-        WindowsAbsPath::assert(self.0.as_path().as_ref())
+    pub fn assert_inner(path: &InnerAbsPathBuf) -> &AbsPathBuf {
+        unsafe { &*(path as *const InnerAbsPathBuf as *const AbsPathBuf) }
+    }
+
+    pub fn as_path(&self) -> &AbsPath {
+        AbsPath::assert_inner(self.0.as_path())
+    }
+
+    pub fn inner(&self) -> &InnerAbsPathBuf {
+        &self.0
+    }
+
+    pub fn pop(&mut self) -> bool {
+        self.0.pop()
     }
 
     pub fn push<P: AsRef<Utf8Path>>(&mut self, suffix: P) {
-        self.0.push(suffix.as_ref());
+        self.0.push(suffix);
         #[cfg(target_os = "windows")]
         {
-            self.0 = InnerAbsPathBuf::try_from(normalize_windows(self.0.as_ref())).unwrap();
+            let normalized = normalize_windows(self.as_ref());
+            self.0 = InnerAbsPathBuf::assert(normalized);
         }
     }
 
     pub fn join(&self, path: impl AsRef<Utf8Path>) -> Self {
-        let joined_inner = InnerAbsPathBuf::try_from(Utf8Path::join(self.as_ref(), path.as_ref()).to_path_buf()).unwrap();
-        let mut result = Self(joined_inner);
         #[cfg(target_os = "windows")]
         {
-            result.0 = InnerAbsPathBuf::try_from(normalize_windows(result.as_ref())).unwrap();
+            let joined = Utf8Path::join(self.as_ref(), path.as_ref());
+            let normalized = normalize_windows(&joined);
+            AbsPathBuf(InnerAbsPathBuf::assert(normalized))
         }
-        result
+        #[cfg(not(target_os = "windows"))]
+        {
+            AbsPathBuf(self.0.join(path.as_ref()))
+        }
     }
 }
 
-impl fmt::Display for WindowsAbsPathBuf {
+impl fmt::Display for AbsPathBuf {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(&self.0, f)
     }
@@ -189,121 +227,177 @@ impl fmt::Display for WindowsAbsPathBuf {
 
 #[derive(Debug, Ord, PartialOrd, Eq, Hash)]
 #[repr(transparent)]
-pub struct WindowsAbsPath(InnerAbsPath);
+pub struct AbsPath(InnerAbsPath);
 
-impl ops::Deref for WindowsAbsPath {
-    type Target = InnerAbsPath;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl<P: AsRef<Path> + ?Sized> PartialEq<P> for WindowsAbsPath {
+impl<P: AsRef<Path> + ?Sized> PartialEq<P> for AbsPath {
     fn eq(&self, other: &P) -> bool {
         #[cfg(target_os = "windows")]
         {
-            let self_str = self.0.as_str().to_lowercase();
+            let self_str = self.as_str().to_lowercase();
             let other_str = other.as_ref().to_string_lossy().to_lowercase();
             self_str == other_str
         }
         #[cfg(not(target_os = "windows"))]
         {
-            self.0.as_std_path() == other.as_ref()
+            self.0 == other.as_ref()
         }
     }
 }
 
-impl AsRef<Utf8Path> for WindowsAbsPath {
+impl ops::Deref for AbsPath {
+    type Target = InnerAbsPath;
+    fn deref(&self) -> &InnerAbsPath {
+        &self.0
+    }
+}
+
+impl AsRef<Utf8Path> for AbsPath {
     fn as_ref(&self) -> &Utf8Path {
         self.0.as_ref()
     }
 }
 
-impl AsRef<Path> for WindowsAbsPath {
+impl AsRef<Path> for AbsPath {
     fn as_ref(&self) -> &Path {
         self.0.as_ref()
     }
 }
 
-impl AsRef<OsStr> for WindowsAbsPath {
+impl AsRef<OsStr> for AbsPath {
     fn as_ref(&self) -> &OsStr {
         self.0.as_ref()
     }
 }
 
-impl ToOwned for WindowsAbsPath {
-    type Owned = WindowsAbsPathBuf;
-
-    fn to_owned(&self) -> Self::Owned {
-        WindowsAbsPathBuf(self.0.to_owned())
+impl AsRef<InnerAbsPath> for AbsPath {
+    fn as_ref(&self) -> &InnerAbsPath {
+        &self.0
     }
 }
 
-impl<'a> TryFrom<&'a Utf8Path> for &'a WindowsAbsPath {
+impl ToOwned for AbsPath {
+    type Owned = AbsPathBuf;
+
+    fn to_owned(&self) -> Self::Owned {
+        AbsPathBuf(self.0.to_owned())
+    }
+}
+
+impl<'a> TryFrom<&'a Utf8Path> for &'a AbsPath {
     type Error = &'a Utf8Path;
-    fn try_from(path: &'a Utf8Path) -> Result<&'a WindowsAbsPath, &'a Utf8Path> {
+    fn try_from(path: &'a Utf8Path) -> Result<&'a AbsPath, &'a Utf8Path> {
         if !path.is_absolute() {
             return Err(path);
         }
-        Ok(WindowsAbsPath::assert(path))
+        Ok(AbsPath::assert(path))
     }
 }
 
-impl WindowsAbsPath {
-    pub fn assert(path: &Utf8Path) -> &WindowsAbsPath {
-        assert!(path.is_absolute(), "{path} is not absolute");
-        unsafe { &*(InnerAbsPath::assert(path) as *const InnerAbsPath as *const WindowsAbsPath) }
+impl AbsPath {
+    pub fn assert(path: &Utf8Path) -> &AbsPath {
+        let inner = InnerAbsPath::assert(path);
+        unsafe { &*(inner as *const InnerAbsPath as *const AbsPath) }
     }
 
-    pub fn parent(&self) -> Option<&WindowsAbsPath> {
-        self.0.parent().map(|p| WindowsAbsPath::assert(p.as_ref()))
+    pub fn assert_inner(path: &InnerAbsPath) -> &AbsPath {
+        unsafe { &*(path as *const InnerAbsPath as *const AbsPath) }
     }
 
-    pub fn absolutize(&self, path: impl AsRef<Utf8Path>) -> WindowsAbsPathBuf {
-        let joined = self.join(path);
-        #[cfg(target_os = "windows")]
-        return WindowsAbsPathBuf(InnerAbsPathBuf::try_from(normalize_windows(joined.as_ref())).unwrap());
-        #[cfg(not(target_os = "windows"))]
-        joined
+    pub fn parent(&self) -> Option<&AbsPath> {
+        self.0.parent().map(AbsPath::assert_inner)
     }
 
-    pub fn join(&self, path: impl AsRef<Utf8Path>) -> WindowsAbsPathBuf {
-        WindowsAbsPathBuf(InnerAbsPathBuf::try_from(Utf8Path::join(self.as_ref(), path.as_ref()).to_path_buf()).unwrap())
+    pub fn absolutize(&self, path: impl AsRef<Utf8Path>) -> AbsPathBuf {
+        self.join(path).normalize()
     }
 
-    pub fn normalize(&self) -> WindowsAbsPathBuf {
+    pub fn join(&self, path: impl AsRef<Utf8Path>) -> AbsPathBuf {
         #[cfg(target_os = "windows")]
         {
-            WindowsAbsPathBuf(InnerAbsPathBuf::try_from(normalize_windows(self.as_ref())).unwrap())
+            let joined = Utf8Path::join(self.as_ref(), path.as_ref());
+            let normalized = normalize_windows(&joined);
+            AbsPathBuf(InnerAbsPathBuf::assert(normalized))
         }
         #[cfg(not(target_os = "windows"))]
         {
-            WindowsAbsPathBuf(InnerAbsPathBuf(normalize_path(self.as_ref())))
+            AbsPathBuf(self.0.join(path.as_ref()))
         }
     }
 
-    pub fn to_path_buf(&self) -> WindowsAbsPathBuf {
-        WindowsAbsPathBuf(self.0.to_path_buf())
+    pub fn normalize(&self) -> AbsPathBuf {
+        #[cfg(target_os = "windows")]
+        {
+            let normalized = normalize_windows(self.as_ref());
+            AbsPathBuf(InnerAbsPathBuf::assert(normalized))
+        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            AbsPathBuf(self.0.normalize())
+        }
     }
 
-    pub fn strip_prefix(&self, base: &WindowsAbsPath) -> Option<&RelPath> {
-        <Self as AsRef<Utf8Path>>::as_ref(self).strip_prefix(<_ as AsRef<Utf8Path>>::as_ref(base)).ok().map(RelPath::new_unchecked)
+    pub fn to_path_buf(&self) -> AbsPathBuf {
+        AbsPathBuf(self.0.to_path_buf())
     }
 
-    pub fn starts_with(&self, base: &WindowsAbsPath) -> bool {
-        <Self as AsRef<Utf8Path>>::as_ref(self).starts_with(<_ as AsRef<Utf8Path>>::as_ref(base))
+    pub fn canonicalize(&self) -> ! {
+        panic!(
+            "We explicitly do not provide canonicalization API, as that is almost always a wrong solution, see #14430"
+        )
+    }
+
+    pub fn strip_prefix(&self, base: &AbsPath) -> Option<&RelPath> {
+        self.0.strip_prefix(&base.0)
+    }
+
+    pub fn starts_with(&self, base: &AbsPath) -> bool {
+        self.0.starts_with(&base.0)
     }
 
     pub fn ends_with(&self, suffix: &RelPath) -> bool {
-        <Self as AsRef<Utf8Path>>::as_ref(self).ends_with(suffix.as_utf8_path())
+        self.0.ends_with(suffix)
     }
 
     pub fn name_and_extension(&self) -> Option<(&str, Option<&str>)> {
         Some((self.file_stem()?, self.extension()))
     }
+
+    pub fn file_name(&self) -> Option<&str> {
+        self.0.file_name()
+    }
+
+    pub fn extension(&self) -> Option<&str> {
+        self.0.extension()
+    }
+
+    pub fn file_stem(&self) -> Option<&str> {
+        self.0.file_stem()
+    }
+
+    pub fn as_os_str(&self) -> &OsStr {
+        self.0.as_os_str()
+    }
+
+    pub fn as_str(&self) -> &str {
+        self.0.as_str()
+    }
+
+    #[deprecated(note = "use Display instead")]
+    pub fn display(&self) -> ! {
+        unimplemented!()
+    }
+
+    #[deprecated(note = "use std::fs::metadata().is_ok() instead")]
+    pub fn exists(&self) -> ! {
+        unimplemented!()
+    }
+
+    pub fn components(&self) -> Utf8Components<'_> {
+        self.0.components()
+    }
 }
 
-impl fmt::Display for WindowsAbsPath {
+impl fmt::Display for AbsPath {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(&self.0, f)
     }

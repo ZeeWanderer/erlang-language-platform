@@ -59,10 +59,13 @@ pub use input::SourceRootId;
 pub use module_index::ModuleIndex;
 pub use module_index::ModuleName;
 pub use module_index::Modules;
-pub use paths::AbsPath;
-pub use paths::AbsPathBuf;
-pub use paths::RelPath;
-pub use paths::RelPathBuf;
+#[cfg(target_os = "windows")]
+use elp_windows::{AbsPath, AbsPathBuf};
+#[cfg(target_os = "windows")]
+use elp_windows::ToVfsPath;
+#[cfg(not(target_os = "windows"))]
+use paths::{AbsPath, AbsPathBuf};
+use paths::{RelPath, RelPathBuf};
 use regex::Regex;
 pub use salsa;
 use salsa::Setter;
@@ -569,7 +572,7 @@ fn mapped_include_file(
     let file_path = include_file_index.include_mapping.get(&path)?;
     include_file_index
         .path_to_file_id
-        .get(&VfsPath::from(file_path.clone()))
+        .get(&VfsPath::from(file_path.clone().to_vfs_path()))
         .copied()
 }
 

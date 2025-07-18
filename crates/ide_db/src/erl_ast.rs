@@ -11,7 +11,13 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use elp_base_db::AbsPath;
+#[cfg(target_os = "windows")]
+use elp_windows::{AbsPath, AbsPathBuf};
+#[cfg(not(target_os = "windows"))]
+use paths::{AbsPath, AbsPathBuf};
+use paths::{RelPath, RelPathBuf};
+
+
 use elp_base_db::FileId;
 use elp_base_db::IncludeCtx;
 use elp_base_db::ProjectId;
@@ -124,7 +130,7 @@ fn module_ast(db: &dyn ErlAstDatabase, file_id: FileId) -> Arc<ParseResult> {
     Arc::new(db.load_ast(
         app_data.project_id,
         file_id,
-        path,
+        AbsPath::assert_inner(&path),
         &app_data.macros,
         &app_data.parse_transforms,
         metadata.into(),

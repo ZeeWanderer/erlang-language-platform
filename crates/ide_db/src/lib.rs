@@ -14,7 +14,12 @@ use std::panic::RefUnwindSafe;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use elp_base_db::AbsPathBuf;
+#[cfg(target_os = "windows")]
+use elp_windows::{AbsPath, AbsPathBuf};
+#[cfg(not(target_os = "windows"))]
+use paths::{AbsPath, AbsPathBuf};
+use paths::{RelPath, RelPathBuf};
+
 use elp_base_db::AppData;
 use elp_base_db::AppDataId;
 use elp_base_db::AppDataInput;

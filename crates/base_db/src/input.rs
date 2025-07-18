@@ -22,9 +22,12 @@ use elp_project_model::ProjectAppData;
 use elp_project_model::buck::IncludeMapping;
 use elp_project_model::buck::TargetFullName;
 use fxhash::FxHashMap;
-use paths::RelPath;
 use paths::Utf8Path;
-use vfs::AbsPathBuf;
+#[cfg(target_os = "windows")]
+use elp_windows::{AbsPath, AbsPathBuf};
+#[cfg(not(target_os = "windows"))]
+use paths::{AbsPath, AbsPathBuf};
+use paths::{RelPath, RelPathBuf};
 use vfs::FileId;
 use vfs::VfsPath;
 use vfs::file_set::FileSet;

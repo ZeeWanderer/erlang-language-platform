@@ -479,6 +479,7 @@ dependencies = [
  "elp_project_model",
  "elp_syntax",
  "elp_text_edit",
+ "elp_windows",
  "env_logger",
  "expect-test",
  "fs_extra",
@@ -529,6 +530,7 @@ dependencies = [
  "either",
  "elp_project_model",
  "elp_syntax",
+ "elp_windows",
  "expect-test",
  "fxhash",
  "lazy_static",
@@ -553,10 +555,12 @@ dependencies = [
  "elp_base_db",
  "elp_syntax",
  "elp_types_db",
+ "elp_windows",
  "fxhash",
  "itertools 0.10.5",
  "log",
  "parking_lot",
+ "paths",
  "ra_ap_query-group-macro",
  "salsa",
  "serde",
@@ -606,6 +610,7 @@ dependencies = [
  "elp_syntax",
  "elp_text_edit",
  "elp_types_db",
+ "elp_windows",
  "env_logger",
  "expect-test",
  "fxhash",
@@ -615,6 +620,7 @@ dependencies = [
  "lazy_static",
  "log",
  "parking_lot",
+ "paths",
  "profile",
  "rayon",
  "regex",
@@ -678,6 +684,7 @@ dependencies = [
  "elp_syntax",
  "elp_text_edit",
  "elp_types_db",
+ "elp_windows",
  "expect-test",
  "fxhash",
  "hir",
@@ -742,6 +749,7 @@ dependencies = [
  "eetf",
  "elp_log",
  "elp_syntax",
+ "elp_windows",
  "expect-test",
  "fxhash",
  "glob",
@@ -811,6 +819,30 @@ dependencies = [
  "serde_json",
  "serde_with",
  "ustr",
+]
+
+[[package]]
+name = "elp_windows"
+version = "1.1.0"
+dependencies = [
+ "anyhow",
+ "byteorder",
+ "camino",
+ "crossbeam-channel",
+ "eetf",
+ "env_logger",
+ "expect-test",
+ "fxhash",
+ "jod-thread",
+ "lazy_static",
+ "log",
+ "parking_lot",
+ "paths",
+ "regex",
+ "stdx",
+ "tempfile",
+ "text-size",
+ "vfs",
 ]
 
 [[package]]
@@ -2538,9 +2570,10 @@ dependencies = [
 [[package]]
 name = "tree-sitter-erlang"
 version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "93be1a3081a815ff6840d6b6741fc920817eb8843c3b97a026ef47a89f108cad"
 dependencies = [
  "cc",
- "tree-sitter",
  "tree-sitter-language",
 ]
 

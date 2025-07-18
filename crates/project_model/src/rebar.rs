@@ -19,14 +19,11 @@ use anyhow::bail;
 use fxhash::FxHashSet;
 use lazy_static::lazy_static;
 use parking_lot::Mutex;
-#[cfg(not(windows))]
-use paths::AbsPath;
-#[cfg(not(windows))]
-use paths::AbsPathBuf;
-#[cfg(windows)]
-use elp_windows::WindowsAbsPath as AbsPath; 
-#[cfg(windows)]
-use elp_windows::WindowsAbsPathBuf as AbsPathBuf;
+#[cfg(target_os = "windows")]
+use elp_windows::{AbsPath, AbsPathBuf};
+#[cfg(not(target_os = "windows"))]
+use paths::{AbsPath, AbsPathBuf};
+use paths::{RelPath, RelPathBuf};
 use paths::Utf8PathBuf;
 use semver::Version;
 use semver::VersionReq;

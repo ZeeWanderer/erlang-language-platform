@@ -10,14 +10,11 @@
 
 use std::fs;
 
-#[cfg(not(windows))]
-use paths::AbsPath;
-#[cfg(not(windows))]
-use paths::AbsPathBuf;
-#[cfg(windows)]
-use elp_windows::WindowsAbsPath as AbsPath; 
-#[cfg(windows)]
-use elp_windows::WindowsAbsPathBuf as AbsPathBuf;
+#[cfg(target_os = "windows")]
+use elp_windows::{AbsPath, AbsPathBuf};
+#[cfg(not(target_os = "windows"))]
+use paths::{AbsPath, AbsPathBuf};
+use paths::{RelPath, RelPathBuf};
 
 use crate::AppName;
 use crate::AppType;

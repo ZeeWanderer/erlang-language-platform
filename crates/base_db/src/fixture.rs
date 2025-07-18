@@ -36,8 +36,13 @@ use elp_project_model::test_fixture::DiagnosticsEnabled;
 use elp_project_model::test_fixture::FixtureWithProjectMeta;
 use elp_project_model::test_fixture::RangeOrOffset;
 use elp_syntax::TextRange;
+use elp_windows::ToVfsPath;
 use fxhash::FxHashMap;
-use paths::AbsPathBuf;
+#[cfg(target_os = "windows")]
+use elp_windows::{AbsPath, AbsPathBuf};
+#[cfg(not(target_os = "windows"))]
+use paths::{AbsPath, AbsPathBuf};
+use paths::{RelPath, RelPathBuf};
 use paths::Utf8Path;
 use vfs::FileId;
 use vfs::VfsPath;
@@ -401,9 +406,18 @@ impl ChangeFixture {
     }
 
     pub fn resolve_file_id(&self, path: &AbsPathBuf) -> Option<FileId> {
+        #[cfg(target_os = "windows")]
+        {
+        self.files_by_path
+            .get(&VfsPath::from(path.clone().to_vfs_path()))
+            .cloned()
+        }
+        #[cfg(not(target_os = "windows"))]
+        {
         self.files_by_path
             .get(&VfsPath::from(path.clone()))
             .cloned()
+        }
     }
 }
 

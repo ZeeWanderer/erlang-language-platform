@@ -22,6 +22,7 @@ elp_log.workspace = true
 elp_project_model.workspace = true
 elp_syntax.workspace = true
 elp_text_edit.workspace = true
+elp_windows.workspace = true
 hir.workspace = true
 
 always-assert.workspace = true

@@ -20,14 +20,11 @@ use eetf::Tuple;
 use fxhash::FxHashMap;
 use indexmap::IndexSet;
 use indexmap::indexset;
-#[cfg(not(windows))]
-use paths::AbsPath;
-#[cfg(not(windows))]
-use paths::AbsPathBuf;
-#[cfg(windows)]
-use elp_windows::WindowsAbsPath as AbsPath; 
-#[cfg(windows)]
-use elp_windows::WindowsAbsPathBuf as AbsPathBuf;
+#[cfg(target_os = "windows")]
+use elp_windows::{AbsPath, AbsPathBuf};
+#[cfg(not(target_os = "windows"))]
+use paths::{AbsPath, AbsPathBuf};
+use paths::{RelPath, RelPathBuf};
 use paths::Utf8Path;
 use paths::Utf8PathBuf;
 use serde::Deserialize;

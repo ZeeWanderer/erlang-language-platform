@@ -12,7 +12,12 @@
 
 use elp_base_db::Change;
 use elp_base_db::FileId;
-use paths::AbsPathBuf;
+
+#[cfg(target_os = "windows")]
+use elp_windows::{AbsPath, AbsPathBuf};
+#[cfg(not(target_os = "windows"))]
+use paths::{AbsPath, AbsPathBuf};
+use paths::{RelPath, RelPathBuf};
 
 use crate::RootDatabase;
 

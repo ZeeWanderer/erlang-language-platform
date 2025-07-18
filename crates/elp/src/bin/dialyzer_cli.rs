@@ -21,10 +21,21 @@ pub fn dialyze_all(args: &DialyzeAll, cli: &mut dyn Cli) -> Result<()> {
 }
 
 pub fn do_dialyze_all(_args: &DialyzeAll, _cli: &mut dyn Cli) -> Result<()> {
-    let mut cmd = Command::new("/usr/bin/env");
-    cmd.arg("bash")
-        .arg("-c")
-        .arg("dialyzer-run 2>&1")
+
+    let mut cmd = if cfg!(target_os = "windows") {
+        let mut cmd = Command::new("cmd");
+        cmd.arg("/C")
+            .arg("dialyzer-run 2>&1");
+        cmd
+    } else {
+        let mut cmd = Command::new("/usr/bin/env");
+        cmd.arg("bash")
+            .arg("-c")
+            .arg("dialyzer-run 2>&1");
+        cmd
+    };
+
+    cmd
         // We let the command act on stdio directly, since we don't need to access it
         .stdin(Stdio::inherit())
         .stderr(Stdio::inherit())

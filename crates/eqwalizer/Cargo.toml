@@ -10,7 +10,9 @@ workspace = true
 elp_base_db.workspace = true
 elp_syntax.workspace = true
 elp_types_db.workspace = true
+elp_windows.workspace = true
 
+paths.workspace = true
 anyhow.workspace = true
 eetf.workspace = true
 fxhash.workspace = true

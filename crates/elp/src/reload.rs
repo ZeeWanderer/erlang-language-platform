@@ -16,7 +16,11 @@ use elp_ide::elp_ide_db::elp_base_db::ProjectApps;
 use elp_ide::elp_ide_db::elp_base_db::VfsPath;
 use elp_ide::elp_ide_db::elp_base_db::loader;
 use fxhash::FxHashSet;
-use vfs::AbsPathBuf;
+#[cfg(target_os = "windows")]
+use elp_windows::{AbsPath, AbsPathBuf, ToVfsPath};
+#[cfg(not(target_os = "windows"))]
+use paths::{AbsPath, AbsPathBuf};
+use paths::{RelPath, RelPathBuf};
 
 #[derive(Debug)]
 pub struct ProjectFolders {
@@ -36,9 +40,9 @@ impl ProjectFolders {
                     let mut file_sets: FxHashSet<VfsPath> = app
                         .abs_src_dirs
                         .iter()
-                        .map(|src| VfsPath::from(src.clone()))
+                        .map(|src| VfsPath::from(src.clone().to_vfs_path()))
                         .collect();
-                    let dir = VfsPath::from(app.dir.clone());
+                    let dir = VfsPath::from(app.dir.clone().to_vfs_path());
                     file_sets.insert(dir);
                     builder.add_file_set(file_sets.into_iter().collect());
                     builder

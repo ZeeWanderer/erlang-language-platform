@@ -38,7 +38,11 @@ use elp_ide_db::assists::AssistContextDiagnostic;
 use elp_ide_db::assists::AssistUserInput;
 use elp_ide_db::common_test::CommonTestInfo;
 use elp_ide_db::docs::Doc;
-use elp_ide_db::elp_base_db::AbsPathBuf;
+#[cfg(target_os = "windows")]
+use elp_windows::{AbsPath, AbsPathBuf};
+#[cfg(not(target_os = "windows"))]
+use paths::{AbsPath, AbsPathBuf};
+use paths::{RelPath, RelPathBuf};
 use elp_ide_db::elp_base_db::Change;
 use elp_ide_db::elp_base_db::FileId;
 use elp_ide_db::elp_base_db::FileKind;
