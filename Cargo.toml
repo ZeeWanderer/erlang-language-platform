@@ -32,6 +32,7 @@ elp_project_model = { path = "./crates/project_model" }
 elp_syntax = { path = "./crates/syntax" }
 elp_text_edit = { path = "./crates/text_edit" }
 elp_types_db = { path = "./crates/types_db" }
+elp_windows = { path = "./crates/windows" }
 hir = { path = "./crates/hir" }
 
 # Forks
