@@ -31,6 +31,8 @@ use crate::CommandProxy;
 use crate::ProjectAppData;
 use crate::ProjectModelError;
 
+use crate::normalize_abs_path;
+
 pub const REQUIRED_REBAR3_VERSION: &str = ">=3.24.0";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -58,7 +60,7 @@ impl Default for Profile {
 impl RebarConfig {
     pub fn from_config_path(config_file: AbsPathBuf, profile: Profile) -> Result<RebarConfig> {
         let config = RebarConfig {
-            config_file,
+            config_file: normalize_abs_path(config_file),
             profile,
         };
 
@@ -137,7 +139,7 @@ fn check_version(config: &RebarConfig) -> Result<bool> {
 
 impl RebarProject {
     pub fn new(root: AbsPathBuf, rebar_config: RebarConfig) -> Self {
-        Self { root, rebar_config }
+        Self { root: normalize_abs_path(root), rebar_config }
     }
 
     pub fn from_rebar_build_info(
@@ -176,31 +178,38 @@ impl RebarProject {
         ));
 
         fn into_app_data(mut term: eetf::Term, is_dep: AppType) -> Result<ProjectAppData> {
-            let dir = into_abs_path(map_pop(&mut term, "dir")?)?;
+            let dir = normalize_abs_path(into_abs_path(map_pop(&mut term, "dir")?)?);
             let abs_src_dirs: Vec<AbsPathBuf> = into_vec(map_pop(&mut term, "src_dirs")?)?
                 .into_iter()
                 .map(|term| Ok(dir.join(into_string(term)?)))
-                .collect::<Result<_>>()?;
+                .collect::<Result<Vec<_>>>()?
+                .into_iter()
+                .map(normalize_abs_path)
+                .collect();
             let include_dirs: Vec<AbsPathBuf> = into_vec(map_pop(&mut term, "include_dirs")?)?
                 .into_iter()
                 .map(into_abs_path)
-                .collect::<Result<_>>()?;
+                .collect::<Result<Vec<_>>>()?
+                .into_iter()
+                .map(normalize_abs_path)
+                .collect();
             Ok(ProjectAppData {
                 name: AppName(into_string(map_pop(&mut term, "name")?)?),
                 buck_target_name: None,
                 dir,
                 ebin: map_pop(&mut term, "ebin")
                     .ok()
-                    .and_then(|e| into_abs_path(e).ok()),
+                    .and_then(|e| into_abs_path(e).ok())
+                    .map(normalize_abs_path),
                 extra_src_dirs: into_vec(map_pop(&mut term, "extra_src_dirs")?)?
                     .into_iter()
                     .map(into_string)
-                    .collect::<Result<_>>()?,
+                    .collect::<Result<Vec<_>>>()?,
                 include_dirs,
                 macros: into_vec(map_pop(&mut term, "macros")?)?
                     .into_iter()
                     .map(|term: eetf::Term| into_tuple(term))
-                    .collect::<Result<_>>()?,
+                    .collect::<Result<Vec<_>>>()?,
                 parse_transforms: into_vec(map_pop(&mut term, "parse_transforms")?)?,
                 app_type: is_dep,
                 include_path: vec![],
@@ -217,10 +226,11 @@ impl RebarProject {
         otp_root: &AbsPathBuf,
     ) -> Vec<ProjectAppData> {
         let global_includes = RebarProject::global_includes(&apps, deps);
+        let normalized_otp_root = normalize_abs_path(otp_root.to_path_buf());
         for app in &mut apps {
             let mut include_paths = global_includes.clone();
             include_paths.extend(app.include_dirs());
-            include_paths.push(otp_root.to_path_buf());
+            include_paths.push(normalized_otp_root.clone());
             app.include_path = include_paths;
         }
         apps
@@ -244,7 +254,7 @@ impl RebarProject {
 impl Default for RebarProject {
     fn default() -> Self {
         RebarProject {
-            root: AbsPathBuf::assert("/".into()).normalize(),
+            root: normalize_abs_path(AbsPathBuf::assert("/".into()).normalize()),
             rebar_config: Default::default(),
         }
     }
@@ -253,7 +263,7 @@ impl Default for RebarProject {
 impl Default for RebarConfig {
     fn default() -> Self {
         RebarConfig {
-            config_file: AbsPathBuf::assert("/".into()).normalize(),
+            config_file: normalize_abs_path(AbsPathBuf::assert("/".into()).normalize()),
             profile: Default::default(),
         }
     }

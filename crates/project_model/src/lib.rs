@@ -884,18 +884,17 @@ impl ProjectAppData {
         let name = versioned_name
             .split_once('-')
             .map_or(versioned_name, |(base, _version)| base);
-        let parent = dir.parent().unwrap_or(dir.as_path()).to_path_buf();
-        let src = dir.join(Utf8PathBuf::from("src"));
-        let include = dir.join("include");
-        let abs_src_dir = dir.join("src");
+        let parent = normalize_abs_path(dir.parent().unwrap_or(dir.as_path()).to_path_buf());
+        let src = normalize_abs_path(dir.join(Utf8PathBuf::from("src")));
+        let include = normalize_abs_path(dir.join("include"));
+        let abs_src_dir = normalize_abs_path(dir.join("src"));
         Self {
             name: AppName(name.to_string()),
             buck_target_name: None,
-            ebin: Some(dir.join("ebin")),
+            ebin: Some(normalize_abs_path(dir.join("ebin"))),
             extra_src_dirs: vec![],
-            // This makes sure files in ./include are loaded into VFS
             include_dirs: vec![include.clone()],
-            dir: dir.clone(),
+            dir: normalize_abs_path(dir.clone()),
             macros: vec![],
             parse_transforms: vec![],
             app_type: AppType::Otp,
@@ -1986,4 +1985,21 @@ mod tests {
             }
         }
     }
+}
+
+#[cfg(windows)]
+pub fn normalize_abs_path(path: AbsPathBuf) -> AbsPathBuf {
+    let s = path.as_os_str().to_string_lossy().to_string().to_uppercase();
+    let stripped = if s.starts_with(r"\\?\") {
+        s[4..].to_string()
+    } else {
+        s
+    };
+    let normalized = stripped.replace('\\', "/");
+    AbsPathBuf::try_from(Utf8PathBuf::from(normalized)).unwrap()
+}
+
+#[cfg(not(windows))]
+pub fn normalize_abs_path(path: AbsPathBuf) -> AbsPathBuf {
+    path
 }

@@ -23,6 +23,7 @@ use paths::Utf8PathBuf;
 
 use crate::AppName;
 use crate::ProjectAppData;
+use crate::normalize_abs_path;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Otp {
@@ -107,8 +108,10 @@ impl Otp {
         }
         let path = String::from_utf8(output.stdout)?;
         let result: Utf8PathBuf = format!("{path}/lib").into();
-        let result = fs::canonicalize(result)?;
-        Ok(Utf8PathBuf::from_path_buf(result).expect("Could not create Utf8PathBuf"))
+        let canonical = fs::canonicalize(result)?;
+        let utf8_canonical = Utf8PathBuf::from_path_buf(canonical).expect("Could not create Utf8PathBuf");
+        let normalized = normalize_abs_path(AbsPathBuf::assert(utf8_canonical));
+        Ok(normalized.into())
     }
 
     pub fn otp_release() -> Result<String> {
@@ -176,9 +179,9 @@ impl Otp {
                     let entry = entry.ok()?;
                     let name = entry.file_name();
                     let path = fs::canonicalize(entry.path()).expect("Could not canonicalize path");
-                    let dir = AbsPathBuf::assert(
+                    let dir = normalize_abs_path(AbsPathBuf::assert(
                         Utf8PathBuf::from_path_buf(path).expect("Could not convert to Utf8PathBuf"),
-                    );
+                    ));
                     Some(ProjectAppData::otp_app_data(name.to_str()?, &dir))
                 })
                 .collect()

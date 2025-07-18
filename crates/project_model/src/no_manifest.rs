@@ -16,6 +16,7 @@ use paths::AbsPathBuf;
 use crate::AppName;
 use crate::AppType;
 use crate::ProjectAppData;
+use crate::normalize_abs_path;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NoManifestConfig {
@@ -29,9 +30,10 @@ pub struct NoManifestConfig {
 
 impl NoManifestConfig {
     pub fn new(root_path: AbsPathBuf, name: AppName, abs_src_dirs: Vec<AbsPathBuf>) -> Self {
-        let config_path = root_path.join(".static");
-        let include_path = root_path.join("include");
-        let test_path = root_path.join("test");
+        let normalized_root_path = normalize_abs_path(root_path);
+        let config_path = normalized_root_path.join(".static");
+        let include_path = normalized_root_path.join("include");
+        let test_path = normalized_root_path.join("test");
         let mut include_dirs = vec![];
         let mut extra_src_dirs = vec![];
         if fs::metadata(&include_path).is_ok() {
@@ -42,7 +44,7 @@ impl NoManifestConfig {
         }
 
         Self {
-            root_path,
+            root_path: normalized_root_path,
             config_path,
             name,
             abs_src_dirs,
@@ -67,7 +69,7 @@ impl NoManifestConfig {
             app_type: AppType::App,
             macros: vec![],
             parse_transforms: vec![],
-            include_path: vec![otp_root.to_path_buf()],
+            include_path: vec![normalize_abs_path(otp_root.to_path_buf())],
             applicable_files: None,
             is_test_target: None,
         };
@@ -75,6 +77,7 @@ impl NoManifestConfig {
         if let Some(path) = self.root_path.parent() {
             data.include_path.push(path.to_path_buf());
         }
+        data.include_path.push(normalize_abs_path(otp_root.to_path_buf()));
         vec![data]
     }
 }
