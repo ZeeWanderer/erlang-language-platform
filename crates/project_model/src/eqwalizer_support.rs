@@ -14,8 +14,14 @@ use anyhow::Result;
 use dirs;
 use include_dir::Dir;
 use lazy_static::lazy_static;
+#[cfg(not(windows))]
 use paths::AbsPath;
+#[cfg(not(windows))]
 use paths::AbsPathBuf;
+#[cfg(windows)]
+use elp_windows::WindowsAbsPath as AbsPath; 
+#[cfg(windows)]
+use elp_windows::WindowsAbsPathBuf as AbsPathBuf;
 use paths::Utf8PathBuf;
 
 use crate::AppName;

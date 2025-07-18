@@ -27,8 +27,14 @@ use fxhash::FxHashSet;
 use indexmap::indexset;
 use lazy_static::lazy_static;
 use parking_lot::Mutex;
+#[cfg(not(windows))]
 use paths::AbsPath;
+#[cfg(not(windows))]
 use paths::AbsPathBuf;
+#[cfg(windows)]
+use elp_windows::WindowsAbsPath as AbsPath; 
+#[cfg(windows)]
+use elp_windows::WindowsAbsPathBuf as AbsPathBuf;
 use paths::RelPathBuf;
 use paths::Utf8PathBuf;
 use regex::Regex;

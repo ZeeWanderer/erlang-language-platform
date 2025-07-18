@@ -39,8 +39,14 @@ use itertools::Either;
 use itertools::Itertools;
 use json::JsonProjectAppData;
 use parking_lot::MutexGuard;
+#[cfg(not(windows))]
 use paths::AbsPath;
+#[cfg(not(windows))]
 use paths::AbsPathBuf;
+#[cfg(windows)]
+use elp_windows::WindowsAbsPath as AbsPath; 
+#[cfg(windows)]
+use elp_windows::WindowsAbsPathBuf as AbsPathBuf;
 use paths::RelPath;
 use paths::Utf8Path;
 use paths::Utf8PathBuf;

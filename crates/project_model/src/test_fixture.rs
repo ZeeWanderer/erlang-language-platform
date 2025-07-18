@@ -87,8 +87,11 @@ use std::fs::File;
 use std::io::Write;
 
 use lazy_static::lazy_static;
+#[cfg(not(windows))]
 use paths::AbsPath;
+#[cfg(not(windows))]
 use paths::AbsPathBuf;
+use elp_windows::WindowsAbsPath as AbsPath; 
 use paths::Utf8Path;
 use paths::Utf8PathBuf;
 use regex::Regex;
