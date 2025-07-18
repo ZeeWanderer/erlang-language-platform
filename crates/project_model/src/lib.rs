@@ -1997,7 +1997,7 @@ mod tests {
 
 #[cfg(windows)]
 pub fn normalize_abs_path(path: AbsPathBuf) -> AbsPathBuf {
-    let s = path.as_os_str().to_string_lossy().to_string().to_uppercase();
+    let s = path.as_os_str().to_string_lossy().to_string();
     let stripped = if s.starts_with(r"\\?\") {
         s[4..].to_string()
     } else {

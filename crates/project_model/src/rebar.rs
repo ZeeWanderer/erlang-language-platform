@@ -147,7 +147,7 @@ fn check_version(config: &RebarConfig) -> Result<bool> {
 
 impl RebarProject {
     pub fn new(root: AbsPathBuf, rebar_config: RebarConfig) -> Self {
-        Self { root: normalize_abs_path(root), rebar_config }
+        Self { root: root, rebar_config }
     }
 
     pub fn from_rebar_build_info(
@@ -163,7 +163,7 @@ impl RebarProject {
     ) -> Result<(RebarProject, Utf8PathBuf, Vec<ProjectAppData>)> {
         let data = fs::read(path)?;
         let mut build_info = eetf::Term::decode(&*data)?;
-        let otp_root = into_abs_path(map_pop(&mut build_info, "otp_lib_dir")?)?;
+        let otp_root = normalize_abs_path(into_abs_path(map_pop(&mut build_info, "otp_lib_dir")?)?);
 
         let apps: Vec<_> = into_vec(map_pop(&mut build_info, "apps")?)?
             .into_iter()
@@ -173,7 +173,7 @@ impl RebarProject {
             .into_iter()
             .map(|term| into_app_data(term, AppType::Dep))
             .collect::<Result<_>>()?;
-        let root = into_abs_path(map_pop(&mut build_info, "source_root")?)?;
+        let root = normalize_abs_path(into_abs_path(map_pop(&mut build_info, "source_root")?)?);
 
         let mut apps_with_includes = RebarProject::add_app_includes(apps, &deps, &otp_root);
         let deps_with_includes = RebarProject::add_app_includes(deps.clone(), &deps, &otp_root);

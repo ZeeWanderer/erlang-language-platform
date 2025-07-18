@@ -47,7 +47,10 @@ impl NoManifestConfig {
             root_path: normalized_root_path,
             config_path,
             name,
-            abs_src_dirs,
+            abs_src_dirs: abs_src_dirs
+                .into_iter()
+                .map(normalize_abs_path)
+                .collect(),
             include_dirs,
             extra_src_dirs,
         }
